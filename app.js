@@ -464,39 +464,6 @@ function renderTarixView() {
     // Nosoz yoki summasi 0 bo'lsa print tugmasini chiqarmaslik uchun shart tekshiramiz
     const showPrintBtn = !isBroken && !isZeroAmount;
 
-    /*
-    wrapper.innerHTML = `
-      <div class="swipe-background" style="width: ${showPrintBtn ? "120px" : "60px"};">
-        ${
-          showPrintBtn
-            ? `
-          <button class="swipe-action-btn swipe-btn-print" title="Chop etish" onclick="confirmReprint(${item.id})">
-            <i class="fa-solid fa-print"></i>
-          </button>
-        `
-            : ""
-        }
-        <button class="swipe-action-btn swipe-btn-delete" title="O'chirish" onclick="confirmDeleteHistoryItem(${item.id})">
-          <i class="fa-solid fa-trash-can"></i>
-        </button>
-      </div>
-
-      <div class="swipe-card-content tarix-card ${cardStatusClass}">
-        <div>
-          <div class="atm-title">${displayTime} — #${item.id}. ${item.name}</div>
-          ${
-            isBroken
-              ? `<div style="color:#dc2626; font-size:0.8rem;">Nosoz</div>`
-              : isZeroAmount
-                ? `<div class="tarix-amount-zero">0 so'm</div>`
-                : `<div class="tarix-amount">${(item.amount || 0).toLocaleString("en-US").replace(/,/g, " ")} so'm</div>`
-          }
-        </div>
-        <i class="fa-solid fa-chevron-left" style="color:#cbd5e1; font-size:0.9rem;">end;</i>
-      </div>
-    `;
-*/
-
     wrapper.innerHTML = `
       <div class="swipe-background" style="width: ${showPrintBtn ? "120px" : "60px"};">
       ${
@@ -717,6 +684,134 @@ function clearFullBase() {
   });
 }
 
+async function toggleBluetoothConnection() {
+  let toesMsg = "";
+
+  if (bleState.isConnected) {
+    if (bleState.device && bleState.device.gatt.connected) {
+      bleState.device.gatt.disconnect();
+    }
+    updateBleUI(false);
+    showToast("Printer uzildi", "error");
+    return;
+  }
+
+  const scanningModal = document.getElementById("ble-scanning-modal");
+
+  try {
+    // --- DIAGNOSTIKA QISMI ---
+    const hasBluetooth = !!navigator.bluetooth;
+    const isSecure = window.isSecureContext;
+
+    toesMsg += `navigator.bluetooth: ${hasBluetooth}\n`;
+    toesMsg += `window.isSecureContext: ${isSecure}\n`;
+
+    console.log("--- BLUETOOTH DIAGNOSTIKA ---");
+    console.log("navigator.bluetooth:", hasBluetooth);
+    console.log("window.isSecureContext:", isSecure);
+
+    if (!hasBluetooth) {
+      toesMsg += "Web Bluetooth API yo'q (navigator.bluetooth undefined)\n";
+      throw new Error("Web Bluetooth API yo'q (navigator.bluetooth undefined)");
+    }
+
+    if (!isSecure) {
+      toesMsg += "Xavfsiz muhit emas (HTTPS talab qilinadi)\n";
+      throw new Error("Xavfsiz muhit emas (HTTPS talab qilinadi)");
+    }
+
+    let bluetoothAvailable = "Noma'lum";
+    try {
+      bluetoothAvailable = await navigator.bluetooth.getAvailability();
+      console.log("Bluetooth getAvailability:", bluetoothAvailable);
+      toesMsg += `Bluetooth getAvailability: ${bluetoothAvailable}\n`;
+    } catch (availErr) {
+      toesMsg += `getAvailability xatosi: ${availErr}\n`;
+      console.warn("getAvailability xatosi:", availErr);
+    }
+    // -------------------------
+
+    // Qidiruv modalini ochish
+    scanningModal.classList.remove("hidden");
+
+    // Qurilma so'rash (native oyna)
+    bleState.device = await navigator.bluetooth.requestDevice({
+      acceptAllDevices: true,
+      optionalServices: KNOWN_SERVICES,
+    });
+
+    scanningModal.classList.add("hidden");
+
+    bleState.device.addEventListener("gattserverdisconnected", () =>
+      updateBleUI(false),
+    );
+
+    bleState.gattServer = await bleState.device.gatt.connect();
+    const services = await bleState.gattServer.getPrimaryServices();
+
+    for (const s of services) {
+      const chars = await s.getCharacteristics();
+      for (const c of chars) {
+        if (c.properties.write || c.properties.writeWithoutResponse) {
+          bleState.writeCharacteristic = c;
+          break;
+        }
+      }
+    }
+
+    if (!bleState.writeCharacteristic)
+      toesMsg += "Yozish kanali (Characteristic) topilmadi\n";
+    throw new Error("Yozish kanali (Characteristic) topilmadi");
+
+    updateBleUI(true, bleState.device.name);
+    showToast("Printer ulandi", "success");
+    toesMsg += "Printer ulandi muvaffaqiyatli\n";
+  } catch (err) {
+    scanningModal.classList.add("hidden");
+
+    // Xatolikni to'liq chiqarish (Nomi va xabari bilan)
+    const errName = err.name || "Xatolik";
+    const errMsg = err.message || "Noma'lum sabab";
+
+    toesMsg += `[${errName}]: ${errMsg}\n`;
+    console.error("Bluetooth ulanish xatosi:", err);
+
+    // Ekranda ko'rinishi uchun aniq xabar
+    showToast(`[${errName}]: ${errMsg}`, "error");
+
+    updateBleUI(false);
+  }
+
+  bleState.gattServer = await bleState.device.gatt.connect();
+
+  // Printerning barcha xizmatlarini olib kelamiz
+  const services = await bleState.gattServer.getPrimaryServices();
+
+  for (const service of services) {
+    try {
+      const characteristics = await service.getCharacteristics();
+      for (const char of characteristics) {
+        // Yozish imkoniyati bor kanalni qidiramiz
+        if (char.properties.write || char.properties.writeWithoutResponse) {
+          bleState.writeCharacteristic = char;
+          break;
+        }
+      }
+    } catch (err) {
+      console.warn("Xizmatni o'qishda xatolik:", err);
+    }
+    if (bleState.writeCharacteristic) break;
+  }
+
+  showToast(`Bluetooth diagnostika:\n${toesMsg}`, "info");
+
+  if (!bleState.writeCharacteristic) {
+    throw new Error("Printerdan yozish kanali topilmadi");
+  }
+}
+
+/*
+
 // --- WEB BLUETOOTH LOGIC (YANGI TARjima VA MODAL BILAN) ---
 async function toggleBluetoothConnection() {
   if (bleState.isConnected) {
@@ -738,25 +833,6 @@ async function toggleBluetoothConnection() {
       acceptAllDevices: true,
       optionalServices: KNOWN_SERVICES,
     });
-
-    /* ****************************************************** */
-
-    console.log("Bluetooth:", !!navigator.bluetooth);
-    console.log("Secure:", window.isSecureContext);
-
-    let toa = `Bluetooth:", ${!!navigator.bluetooth} --- Secure:", ${window.isSecureContext}`;
-
-    if (navigator.bluetooth) {
-      navigator.bluetooth
-        .getAvailability()
-        .then(console.log, showToast(toa + console.log.toString, "success"))
-        .catch(
-          console.error,
-          showToast(toa + console.error.toString, "success"),
-        );
-    }
-
-    /* ****************************************************** */
 
     // Oynadan qurilma tanlangach, qidiruv modalini yopamiz
     scanningModal.classList.add("hidden");
@@ -802,6 +878,8 @@ async function toggleBluetoothConnection() {
     updateBleUI(false);
   }
 }
+
+*/
 
 function updateBleUI(isConnected, name = "") {
   bleState.isConnected = isConnected;
