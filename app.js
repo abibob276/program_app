@@ -461,11 +461,21 @@ function renderTarixView() {
     const wrapper = document.createElement("div");
     wrapper.className = "swipe-wrapper";
 
+    // Nosoz yoki summasi 0 bo'lsa print tugmasini chiqarmaslik uchun shart tekshiramiz
+    const showPrintBtn = !isBroken && !isZeroAmount;
+
+    /*
     wrapper.innerHTML = `
-      <div class="swipe-background">
-        <button class="swipe-action-btn swipe-btn-print" title="Chop etish" onclick="confirmReprint(${item.id})">
-          <i class="fa-solid fa-print"></i>
-        </button>
+      <div class="swipe-background" style="width: ${showPrintBtn ? "120px" : "60px"};">
+        ${
+          showPrintBtn
+            ? `
+          <button class="swipe-action-btn swipe-btn-print" title="Chop etish" onclick="confirmReprint(${item.id})">
+            <i class="fa-solid fa-print"></i>
+          </button>
+        `
+            : ""
+        }
         <button class="swipe-action-btn swipe-btn-delete" title="O'chirish" onclick="confirmDeleteHistoryItem(${item.id})">
           <i class="fa-solid fa-trash-can"></i>
         </button>
@@ -482,16 +492,48 @@ function renderTarixView() {
                 : `<div class="tarix-amount">${(item.amount || 0).toLocaleString("en-US").replace(/,/g, " ")} so'm</div>`
           }
         </div>
-        <i class="fa-solid fa-chevron-left" style="color:#cbd5e1; font-size:0.9rem;"></i>
+        <i class="fa-solid fa-chevron-left" style="color:#cbd5e1; font-size:0.9rem;">end;</i>
+      </div>
+    `;
+*/
+
+    wrapper.innerHTML = `
+      <div class="swipe-background" style="width: ${showPrintBtn ? "120px" : "60px"};">
+      ${
+        showPrintBtn
+          ? `
+          <button class="swipe-action-btn swipe-btn-print" title="Chop etish" onclick="confirmReprint(${item.id})">
+            <i class="fa-solid fa-print"></i>
+          </button>
+        `
+          : ""
+      }
+        <button class="swipe-action-btn swipe-btn-delete" title="O'chirish" onclick="confirmDeleteHistoryItem(${item.id})">
+          <i class="fa-solid fa-trash-can"></i>
+        </button>
+      </div>
+
+      <div class="swipe-card-content tarix-card ${cardStatusClass}">
+        <div>
+          <div class="atm-title">${displayTime} — #${item.id}. ${item.name}</div>
+          ${
+            isBroken
+              ? `<div style="color:#dc2626; font-size:0.8rem;">Nosoz</div>`
+              : isZeroAmount
+                ? `<div class="tarix-amount-zero">0 so'm</div>`
+                : `<div class="tarix-amount">${(item.amount || 0).toLocaleString("en-US").replace(/,/g, " ")} so'm</div>`
+          }
+        </div>
+        <i class="fa-solid fa-chevron-left" style="color:#cbd5e1; font-size:0.9rem;" end;"></i>
       </div>
     `;
 
-    setupSwipeEvents(wrapper);
+    setupSwipeEvents(wrapper, showPrintBtn ? -120 : -60);
     listEl.appendChild(wrapper);
   });
 }
 
-function setupSwipeEvents(wrapper) {
+function setupSwipeEvents(wrapper, maxSwipe = -120) {
   const card = wrapper.querySelector(".swipe-card-content");
   let startX = 0;
   let currentX = 0;
@@ -510,10 +552,10 @@ function setupSwipeEvents(wrapper) {
     const diffX = clientX - startX;
 
     if (!isOpened && diffX < 0) {
-      currentX = Math.max(diffX, -120);
+      currentX = Math.max(diffX, maxSwipe);
       card.style.transform = `translateX(${currentX}px)`;
     } else if (isOpened && diffX > 0) {
-      currentX = Math.min(-120 + diffX, 0);
+      currentX = Math.min(maxSwipe + diffX, 0);
       card.style.transform = `translateX(${currentX}px)`;
     }
   }
@@ -530,7 +572,7 @@ function setupSwipeEvents(wrapper) {
         if (prevOpenedWrapper) prevOpenedWrapper.classList.remove("swipe-open");
       }
 
-      card.style.transform = `translateX(-120px)`;
+      card.style.transform = `translateX(${maxSwipe}px)`;
       isOpened = true;
       activeSwipeCard = card;
       wrapper.classList.add("swipe-open");
