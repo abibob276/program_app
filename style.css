@@ -257,7 +257,8 @@ html {
   position: relative;
   overflow: hidden;
   border-radius: 10px;
-  background: #cbd5e1;
+  background: #ffffff; /* Orqa fon kulrang o'rniga oq qilindi */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .swipe-background {
@@ -271,6 +272,19 @@ html {
   justify-content: space-around;
   padding: 0 10px;
   background: #f1f5f9;
+  border-radius: 0 10px 10px 0;
+}
+
+.swipe-card-content {
+  position: relative;
+  background: white;
+  padding: 12px;
+  border-radius: 10px;
+  transition: transform 0.2s ease-out;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 2;
 }
 
 .swipe-action-btn {
@@ -293,19 +307,6 @@ html {
 
 .swipe-btn-delete {
   background: #dc2626;
-}
-
-.swipe-card-content {
-  position: relative;
-  background: white;
-  padding: 12px;
-  border-radius: 10px;
-  transition: transform 0.2s ease-out;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  z-index: 2;
 }
 
 .tarix-card.success {
