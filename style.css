@@ -26,7 +26,6 @@ html {
   position: relative;
 }
 
-/* HEADER */
 .main-header {
   height: 56px;
   background: #ffffff;
@@ -55,7 +54,6 @@ html {
   color: #1e293b;
 }
 
-/* BLE BADGE */
 .ble-badge {
   display: flex;
   align-items: center;
@@ -83,13 +81,12 @@ html {
   background: currentColor;
 }
 
-/* VIEWS */
 #views-container {
   flex: 1;
   overflow-y: auto;
   position: relative;
   padding: 12px;
-  padding-bottom: 70px;
+  padding-bottom: 24px;
 }
 
 .view {
@@ -100,7 +97,6 @@ html {
   display: block;
 }
 
-/* STATS & CARDS */
 .view-header {
   display: flex;
   justify-content: space-between;
@@ -135,7 +131,7 @@ html {
 
 .summary-item {
   display: flex;
-  /* align-items: baseline; */
+  align-items: baseline;
   gap: 6px; /* Yozuv va summa orasidagi masofa */
 }
 
@@ -150,6 +146,12 @@ html {
   color: #16a34a;
 }
 
+.summary-counts {
+  margin-top: 4px;
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
 .swipe-hint {
   font-size: 0.75rem;
   color: #64748b;
@@ -157,7 +159,6 @@ html {
   margin: 8px 0;
 }
 
-/* BUTTONS */
 .btn-group {
   display: flex;
   gap: 6px;
@@ -223,7 +224,6 @@ html {
   color: #16a34a;
 }
 
-/* LISTS & ATM CARDS */
 .cards-list {
   display: flex;
   flex-direction: column;
@@ -252,32 +252,46 @@ html {
   gap: 8px;
 }
 
-/* SWIPEABLE CARD FOR HISTORY */
+/* SWIPEABLE CARD (O'NGDAN CHAPGA SWIPE) */
 .swipe-wrapper {
   position: relative;
   overflow: hidden;
   border-radius: 10px;
+  background: #cbd5e1;
 }
 
 .swipe-background {
   position: absolute;
   top: 0;
   bottom: 0;
-  left: 0;
   right: 0;
+  width: 120px;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 0 16px;
-  font-weight: 600;
-  font-size: 0.85rem;
-  color: white;
+  justify-content: space-around;
+  padding: 0 10px;
+  background: #f1f5f9;
 }
 
-.swipe-bg-left {
+.swipe-action-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  border: none;
+  color: white;
+  font-size: 1.1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+.swipe-btn-print {
   background: #2563eb;
 }
-.swipe-bg-right {
+
+.swipe-btn-delete {
   background: #dc2626;
 }
 
@@ -286,19 +300,20 @@ html {
   background: white;
   padding: 12px;
   border-radius: 10px;
-  transition: transform 0.15s ease-out;
+  transition: transform 0.2s ease-out;
   display: flex;
   justify-content: space-between;
   align-items: center;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  z-index: 2;
 }
 
 .tarix-card.success {
   border-left: 5px solid #16a34a;
 }
-
 .tarix-card.warning {
   border-left: 5px solid #d97706;
+  /* border-left: 5px solid #2563eb; */
 }
 .tarix-card.broken {
   border-left: 5px solid #dc2626;
@@ -315,7 +330,6 @@ html {
   font-size: 0.9rem;
 }
 
-/* BAZA PAGE CARDS */
 .card {
   background: white;
   border-radius: 10px;
@@ -374,9 +388,9 @@ html {
   margin: 8px 0;
 }
 
-/* BOTTOM NAV */
 .bottom-nav {
-  position: absolute;
+  /* position: absolute; */
+  position: flex;
   bottom: 0;
   left: 0;
   right: 0;
@@ -409,7 +423,6 @@ html {
   font-weight: 600;
 }
 
-/* MODALS & ACCORDION */
 .modal {
   position: fixed;
   top: 0;
@@ -565,6 +578,9 @@ html {
 .w-100 {
   width: 100%;
 }
+.text-center {
+  text-align: center;
+}
 .text-success {
   color: #16a34a;
 }
@@ -572,7 +588,6 @@ html {
   color: #d97706;
 }
 
-/* TOAST NOTIFICATION */
 .toast {
   position: fixed;
   bottom: 30px;
@@ -587,11 +602,13 @@ html {
   z-index: 10000;
   transition: opacity 0.3s ease;
 }
+
 .toast.hidden {
   opacity: 0;
   pointer-events: none;
   display: none;
 }
+
 .toast.success {
   background: #16a34a;
 }
@@ -599,7 +616,6 @@ html {
   background: #dc2626;
 }
 
-/* Input spinner (tepa-past strelka) larni olib tashlash */
 .modal-input::-webkit-outer-spin-button,
 .modal-input::-webkit-inner-spin-button {
   -webkit-appearance: none;

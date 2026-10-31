@@ -7,8 +7,6 @@
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
     />
     <title>Inkassa & Printer App</title>
-
-    <!-- FontAwesome va Tailwind CSS (Ixtiyoriy yengil stillar uchun) -->
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
@@ -16,9 +14,7 @@
     <link rel="stylesheet" href="style.css" />
     <link rel="manifest" href="manifest.json" />
 
-    <!-- SheetJS (Excel bilan ishlash uchun) -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <!-- Telegram WebApp SDK -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
   </head>
   <body>
@@ -29,7 +25,6 @@
           <i class="fa-solid fa-print logo-icon"></i>
           <h2>Inkassa App</h2>
         </div>
-        <!-- Bluetooth ixcham status ko'rsatkichi -->
         <div id="quickBleBadge" class="ble-badge disconnected">
           <span class="ble-dot"></span>
           <span id="quickBleText">Ulanmagan</span>
@@ -71,25 +66,13 @@
         <!-- 2-OYNA: TARIX -->
         <section id="view-tarix" class="view">
           <div class="view-header vertical">
-            <div
-              class="history-summary"
-              style="
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-              "
-            >
+            <div class="history-summary">
               <div>
-                <div
-                  class="summary-item"
-                  style="display: flex; align-items: center; gap: 6px"
-                >
-                  <span class="label" style="display: inline"
-                    >Jami inkassa:</span
-                  >
+                <div class="summary-item">
+                  <span class="label">Jami inkassa:</span>
                   <strong id="tarix-total-sum">0 so'm</strong>
                 </div>
-                <div class="summary-counts" style="margin-top: 4px">
+                <div class="summary-counts">
                   <span
                     >Inkassa: <strong id="tarix-success-count">0</strong></span
                   >
@@ -98,7 +81,6 @@
                 </div>
               </div>
 
-              <!-- TARIXNI TOZALASH TUGMASI -->
               <button
                 class="btn btn-danger-outline"
                 onclick="clearTarixData()"
@@ -110,8 +92,7 @@
           </div>
 
           <p class="swipe-hint">
-            <i class="fa-solid fa-hand-pointer"></i> Chapga: o'chirish / O'ngga:
-            chop etish
+            <i class="fa-solid fa-hand-pointer"></i> O'ngdan chapga torting
           </p>
 
           <div id="tarix-list" class="cards-list"></div>
@@ -119,7 +100,6 @@
 
         <!-- 3-OYNA: BAZA -->
         <section id="view-baza" class="view">
-          <!-- BLUETOOTH CONTROL SECTION -->
           <div class="card bluetooth-card">
             <div class="ble-info-row">
               <div class="ble-details">
@@ -141,7 +121,6 @@
             </div>
           </div>
 
-          <!-- EXCEL CONTROLS -->
           <div class="card excel-card">
             <div class="card-title">
               <span
@@ -166,7 +145,6 @@
             />
           </div>
 
-          <!-- FULL BASE LIST -->
           <h4 class="section-subtitle">Barcha Bankomatlar Ro'yxati</h4>
           <div id="baza-list" class="cards-list"></div>
         </section>
@@ -190,8 +168,6 @@
     </div>
 
     <!-- MODALS -->
-
-    <!-- MODAL 1: MARSHRUTGA BELGILASH -->
     <div id="select-modal" class="modal hidden">
       <div class="modal-content">
         <div class="modal-header">
@@ -212,7 +188,6 @@
       </div>
     </div>
 
-    <!-- MODAL 2: INKASSA SUMMASINI KIRITISH -->
     <div id="inkassa-modal" class="modal hidden">
       <div class="modal-content modal-small">
         <h3 id="inkassaModalTitle">#101. Bankomat</h3>
@@ -240,14 +215,16 @@
       </div>
     </div>
 
-    <!-- MODAL 3: CONFIRMATION -->
     <div id="confirm-modal" class="modal hidden">
-      <div class="modal-content modal-small">
-        <p id="confirm-message" style="margin-bottom: 12px; font-weight: 500">
+      <div class="modal-content modal-small text-center">
+        <p
+          id="confirm-message"
+          style="margin-bottom: 16px; font-weight: 500; font-size: 1rem"
+        >
           Ushbu amalni bajarmoqchimisiz?
         </p>
         <div class="modal-footer grid-2">
-          <button id="confirm-yes-btn" class="btn btn-danger">Ha</button>
+          <button id="confirm-yes-btn" class="btn btn-primary">Ha</button>
           <button onclick="closeConfirmModal()" class="btn btn-secondary">
             Yo'q
           </button>
@@ -255,7 +232,6 @@
       </div>
     </div>
 
-    <!-- MODAL 4: CHOP ETASIZMI? (YANGI) -->
     <div id="print-confirm-modal" class="modal hidden">
       <div class="modal-content modal-small text-center">
         <h3>Chop etasizmi?</h3>
@@ -282,10 +258,24 @@
       </div>
     </div>
 
-    <!-- Toast Notification -->
-    <div id="toast-notification" class="toast hidden"></div>
+    <!-- BLUETOOTH QIDIRISH STATUS MODALI (YANGI) -->
+    <div id="ble-scanning-modal" class="modal hidden">
+      <div
+        class="modal-content modal-small text-center"
+        style="padding: 24px 16px"
+      >
+        <i
+          class="fa-solid fa-spinner fa-spin"
+          style="font-size: 2.5rem; color: #2563eb; margin-bottom: 12px"
+        ></i>
+        <h3 style="margin-bottom: 8px">Bluetooth qidirilmoqda</h3>
+        <p style="color: #64748b; font-size: 0.9rem">
+          Printer qurilmasini tanlang
+        </p>
+      </div>
+    </div>
 
-    <!-- HIDDEN CANVAS FOR BLUETOOTH RASTER PRINTING -->
+    <div id="toast-notification" class="toast hidden"></div>
     <canvas id="printCanvas" style="display: none"></canvas>
 
     <script src="app.js"></script>

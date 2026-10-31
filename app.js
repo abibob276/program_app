@@ -1,8 +1,8 @@
 // --- STATE MANAGEMENT ---
 const db = {
-  baza: safeGetStorage("inkassa_baza_v2", []),
-  marshrutIds: safeGetStorage("inkassa_marshrut_v2", []),
-  tarix: safeGetStorage("inkassa_tarix_v2", []),
+  baza: safeGetStorage("inkassa_baza", []),
+  marshrutIds: safeGetStorage("inkassa_marshrut", []),
+  tarix: safeGetStorage("inkassa_tarix", []),
 };
 
 const bleState = {
@@ -25,10 +25,8 @@ const KNOWN_SERVICES = [
 
 let activeInkassaAtmId = null;
 let pendingConfirmAction = null;
-
 let activeInkassaAmount = 0;
 
-// --- INITIALIZATION ---
 window.onload = function () {
   if (window.Telegram?.WebApp) {
     Telegram.WebApp.ready();
@@ -49,9 +47,9 @@ function safeGetStorage(key, defaultVal) {
 }
 
 function saveData() {
-  localStorage.setItem("inkassa_baza_v2", JSON.stringify(db.baza));
-  localStorage.setItem("inkassa_marshrut_v2", JSON.stringify(db.marshrutIds));
-  localStorage.setItem("inkassa_tarix_v2", JSON.stringify(db.tarix));
+  localStorage.setItem("inkassa_baza", JSON.stringify(db.baza));
+  localStorage.setItem("inkassa_marshrut", JSON.stringify(db.marshrutIds));
+  localStorage.setItem("inkassa_tarix", JSON.stringify(db.tarix));
   renderAllViews();
 }
 
@@ -85,7 +83,6 @@ document
     closeConfirmModal();
   });
 
-// --- NAVIGATION ---
 function setupNavigation() {
   const navItems = document.querySelectorAll(".nav-item");
   navItems.forEach((btn) => {
@@ -151,7 +148,6 @@ function renderMarshrutView() {
   });
 }
 
-// --- MARSHRUTGA BELGILASH MODALI (ANDOZA BILAN MUKAMMAL) ---
 function openSelectModal() {
   const listEl = document.getElementById("select-checkbox-list");
   listEl.innerHTML = "";
@@ -297,27 +293,20 @@ function closeInkassaModal() {
   activeInkassaAtmId = null;
 }
 
-// Inputga yozilayotgan raqamni avtomatik "198 500" formatga o'tkazish
 function formatMoneyInput(input) {
-  // Faqat raqamlarni olib qolamiz
   let rawValue = input.value.replace(/\D/g, "");
-
   if (!rawValue) {
     input.value = "";
     return;
   }
-
-  // Mingliklarga bo'sh joy qo'shib formatlaymiz
   let formattedValue = Number(rawValue)
     .toLocaleString("en-US")
     .replace(/,/g, " ");
   input.value = formattedValue;
 }
 
-// 1-bosqich: Summa kiritilib saqlanganda
 function processInkassaAmountSubmit() {
   const inputEl = document.getElementById("inkassaAmountInput");
-  // Saqlash vaqtida bo'sh joylarni olib tashlab haqiqiy raqamga aylantiramiz
   const rawVal = inputEl.value.replace(/\s/g, "");
   activeInkassaAmount = rawVal ? parseFloat(rawVal) : 0;
 
@@ -325,7 +314,6 @@ function processInkassaAmountSubmit() {
 
   if (!activeInkassaAtmId) return;
 
-  // Agar summa 0 yoki undan kichik bo'lsa, shunchaki tarixga yozamiz (printer ishlamaydi)
   if (activeInkassaAmount <= 0) {
     saveInkassaRecord(0, false);
     showToast("Inkassa saqlandi (Summa 0)", "success");
@@ -334,7 +322,6 @@ function processInkassaAmountSubmit() {
     return;
   }
 
-  // Summa > 0 bo'lsa, "Chop etasizmi?" modalini ochamiz
   const atm = db.baza.find((a) => a.id === activeInkassaAtmId);
   const now = new Date();
   const dateStr = `${String(now.getDate()).padStart(2, "0")}.${String(now.getMonth() + 1).padStart(2, "0")}.${now.getFullYear()}`;
@@ -347,7 +334,6 @@ function processInkassaAmountSubmit() {
   document.getElementById("print-confirm-modal").classList.remove("hidden");
 }
 
-// 2-bosqich: "Chop etasizmi?" modalida Ha yoki Yo'q tanlanganda
 async function processPrintDecision(shouldPrint) {
   document.getElementById("print-confirm-modal").classList.add("hidden");
 
@@ -404,42 +390,6 @@ function saveInkassaRecord(amount, printed) {
   saveData();
 }
 
-async function processInkassaSubmit(shouldProcess) {
-  document.getElementById("inkassa-modal").classList.add("hidden");
-
-  if (!shouldProcess || !activeInkassaAtmId) {
-    activeInkassaAtmId = null;
-    return;
-  }
-
-  const val = document.getElementById("inkassaAmountInput").value;
-  const amount = val ? parseFloat(val) : 0;
-  const atm = db.baza.find((a) => a.id === activeInkassaAtmId);
-
-  const now = new Date();
-  const timeStr = `${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}`;
-
-  const record = {
-    id: atm.id,
-    name: atm.name,
-    amount: amount,
-    time: timeStr,
-    status: "success",
-  };
-
-  db.tarix.push(record);
-  saveData();
-
-  if (bleState.isConnected) {
-    await printReceipt(record);
-    showToast("Inkassa saqlandi va chek chop etildi", "success");
-  } else {
-    showToast("Ma'lumot saqlandi (Printer ulanmagan)", "success");
-  }
-
-  activeInkassaAtmId = null;
-}
-
 function markBroken(id) {
   showConfirm("Ushbu bankomatni nosoz deb belgilamoqchimisiz?", function () {
     const atm = db.baza.find((a) => a.id === id);
@@ -492,7 +442,6 @@ function renderTarixView() {
     const isBroken = item.status === "broken";
     const isZeroAmount = !isBroken && (!item.amount || item.amount === 0);
 
-    // Karta holatiga qarab sinf tanlaymiz: broken (qizil), warning (sariq), success (yashil)
     let cardStatusClass = "success";
     if (isBroken) {
       cardStatusClass = "broken";
@@ -500,38 +449,50 @@ function renderTarixView() {
       cardStatusClass = "warning";
     }
 
+    // item.time ichidan faqat vaqtni ajratib olamiz (masalan: "31.10.2026 14:30" -> "14:30")
+    let displayTime = item.time;
+    if (item.time && item.time.includes(" ")) {
+      displayTime = item.time.split(" ")[1];
+    }
+
     const wrapper = document.createElement("div");
     wrapper.className = "swipe-wrapper";
 
     wrapper.innerHTML = `
-      <div class="swipe-background">
-        <span class="swipe-bg-left"><i class="fa-solid fa-print"></i> Qayta chop etish</span>
-        <span class="swipe-bg-right">O'chirish & Qaytash <i class="fa-solid fa-rotate-left"></i></span>
-      </div>
-      <div class="swipe-card-content tarix-card ${cardStatusClass}">
-        <div>
-          <div class="atm-title">${item.time} — #${item.id}. ${item.name}</div>
-          ${
-            isBroken
-              ? `<div style="color:#dc2626; font-size:0.8rem;">Nosoz</div>`
-              : isZeroAmount
-                ? `<div class="tarix-amount-zero">0 so'm</div>`
-                : `<div class="tarix-amount">${(item.amount || 0).toLocaleString("en-US").replace(/,/g, " ")} so'm</div>`
-          }
-        </div>
-        <i class="fa-solid fa-chevron-left" style="color:#cbd5e1; font-size:0.8rem;"></i>
-      </div>
-    `;
+    <div class="swipe-background">
+      <button class="swipe-action-btn swipe-btn-print" title="Chop etish" onclick="confirmReprint(${item.id})">
+        <i class="fa-solid fa-print"></i>
+      </button>
+      <button class="swipe-action-btn swipe-btn-delete" title="O'chirish" onclick="confirmDeleteHistoryItem(${item.id})">
+        <i class="fa-solid fa-trash-can"></i>
+      </button>
+    </div>
 
-    setupSwipeEvents(wrapper, item);
+    <div class="swipe-card-content tarix-card ${cardStatusClass}">
+      <div>
+        <div class="atm-title">${displayTime} — #${item.id}. ${item.name}</div>
+        ${
+          isBroken
+            ? `<div style="color:#dc2626; font-size:0.8rem;">Nosoz</div>`
+            : isZeroAmount
+              ? `<div class="tarix-amount-zero">0 so'm</div>`
+              : `<div class="tarix-amount">${(item.amount || 0).toLocaleString("en-US").replace(/,/g, " ")} so'm</div>`
+        }
+      </div>
+      <i class="fa-solid fa-chevron-left" style="color:#cbd5e1; font-size:0.9rem;"></i>
+    </div>
+  `;
+
+    setupSwipeEvents(wrapper);
     listEl.appendChild(wrapper);
   });
 }
 
-function setupSwipeEvents(wrapper, item) {
+function setupSwipeEvents(wrapper) {
   const card = wrapper.querySelector(".swipe-card-content");
   let startX = 0;
   let currentX = 0;
+  let isOpened = false;
 
   card.addEventListener("touchstart", (e) => {
     startX = e.touches[0].clientX;
@@ -540,31 +501,46 @@ function setupSwipeEvents(wrapper, item) {
   card.addEventListener(
     "touchmove",
     (e) => {
-      currentX = e.touches[0].clientX - startX;
-      if (Math.abs(currentX) > 10) {
-        e.preventDefault();
-      }
-      if (Math.abs(currentX) < 120) {
+      const diffX = e.touches[0].clientX - startX;
+      if (!isOpened && diffX < 0) {
+        currentX = Math.max(diffX, -120);
+        card.style.transform = `translateX(${currentX}px)`;
+      } else if (isOpened && diffX > 0) {
+        currentX = Math.min(-120 + diffX, 0);
         card.style.transform = `translateX(${currentX}px)`;
       }
     },
-    { passive: false },
+    { passive: true },
   );
 
   card.addEventListener("touchend", () => {
-    card.style.transform = `translateX(0px)`;
-    if (currentX > 80) {
-      if (bleState.isConnected) {
-        printReceipt(item);
-        showToast("Chek qayta chop etilmoqda", "success");
-      } else {
-        showToast("Printerga ulanmagansiz!", "error");
-      }
-    } else if (currentX < -80) {
-      removeFromTarixAndReturn(item.id);
+    if (currentX < -50) {
+      card.style.transform = `translateX(-120px)`;
+      isOpened = true;
+    } else {
+      card.style.transform = `translateX(0px)`;
+      isOpened = false;
     }
-    startX = 0;
-    currentX = 0;
+  });
+}
+
+function confirmReprint(id) {
+  const item = db.tarix.find((t) => t.id === id);
+  if (!item) return;
+
+  showConfirm(`Qayta chop etilsinmi?\n#${item.id}. ${item.name}`, function () {
+    if (bleState.isConnected) {
+      printReceipt(item);
+      showToast("Chek qayta chop etilmoqda", "success");
+    } else {
+      showToast("Printerga ulanmagansiz!", "error");
+    }
+  });
+}
+
+function confirmDeleteHistoryItem(id) {
+  showConfirm("O'chirilsinmi?", function () {
+    removeFromTarixAndReturn(id);
   });
 }
 
@@ -574,7 +550,7 @@ function removeFromTarixAndReturn(id) {
     db.marshrutIds.push(id);
   }
   saveData();
-  showToast("Bankomat marshrutga qaytarildi", "success");
+  showToast("O'chirildi va bankomat marshrutga qaytarildi", "success");
 }
 
 // --- 3-OYNA: BAZA & BLUETOOTH & EXCEL ---
@@ -629,14 +605,11 @@ function setupExcelImport() {
     });
 }
 
-// Tarixni butunlay tozalash va bankomatlarni toza holatga qaytarish
 function clearTarixData() {
   showConfirm("Haqiqatan ham tarixni tozalamoqchimisiz?", function () {
     db.tarix = [];
-    // Agar xohlasangiz marshrutni ham tozalash mumkin, lekin so'rov bo'yicha
-    // bankomatlar tarixi tozalanib boshlang'ich holatga qaytishi ko'zda tutilgan.
     saveData();
-    showToast("Tarix tozalandi, bankomatlar toza holatga qaytdi", "success");
+    showToast("Tarix tozalandi", "success");
   });
 }
 
@@ -650,7 +623,7 @@ function clearFullBase() {
   });
 }
 
-// --- WEB BLUETOOTH LOGIC ---
+// --- WEB BLUETOOTH LOGIC (YANGI TARjima VA MODAL BILAN) ---
 async function toggleBluetoothConnection() {
   if (bleState.isConnected) {
     if (bleState.device && bleState.device.gatt.connected) {
@@ -661,11 +634,19 @@ async function toggleBluetoothConnection() {
     return;
   }
 
+  const scanningModal = document.getElementById("ble-scanning-modal");
+
   try {
+    // 1. requestDevice chaqirishdan oldin custom modal chiqarish
+    scanningModal.classList.remove("hidden");
+
     bleState.device = await navigator.bluetooth.requestDevice({
       acceptAllDevices: true,
       optionalServices: KNOWN_SERVICES,
     });
+
+    // Oynadan qurilma tanlangach, qidiruv modalini yopamiz
+    scanningModal.classList.add("hidden");
 
     bleState.device.addEventListener("gattserverdisconnected", () =>
       updateBleUI(false),
@@ -690,7 +671,21 @@ async function toggleBluetoothConnection() {
     updateBleUI(true, bleState.device.name);
     showToast("Printer ulandi", "success");
   } catch (err) {
-    showToast(`Ulanishda xatolik: ${err.message}`, "error");
+    scanningModal.classList.add("hidden");
+
+    // Xatoliklarni foydalanuvchiga tushunarli tarjimada chiqarish
+    const errMsg = err.message || "";
+    if (errMsg.includes("User cancelled") || errMsg.includes("canceled")) {
+      showToast("Qurilma tanlash bekor qilindi.", "error");
+    } else if (
+      errMsg.includes("Bluetooth adapter not available") ||
+      errMsg.includes("powered off")
+    ) {
+      showToast("Telefoningizda Bluetooth o'chiq", "error");
+    } else {
+      showToast(`Ulanishda xatolik: ${err.message}`, "error");
+    }
+
     updateBleUI(false);
   }
 }
@@ -735,11 +730,11 @@ async function printReceipt(record) {
   ctx.fillRect(0, 0, width, height);
 
   ctx.fillStyle = "#000000";
-  ctx.font = "bold 26px sans-serif";
+  ctx.font = "normal 28px sans-serif";
   ctx.textAlign = "center";
   ctx.fillText(`#${record.id}. ${record.name}`, width / 2, 40);
 
-  ctx.font = "normal 30px sans-serif";
+  ctx.font = "bold 32px sans-serif";
   ctx.fillText(
     `Summa: ${(record.amount || 0).toLocaleString()} so'm`,
     width / 2,
@@ -748,15 +743,16 @@ async function printReceipt(record) {
 
   let dateOnly = "";
   if (record.time && typeof record.time === "string") {
+    // Agar record.time ichida sana bo'lsa (masalan "31.10.2026 14:30"), birinchi qismini olamiz
     dateOnly = record.time.split(" ")[0];
   }
-
-  if (!dateOnly || dateOnly === "undefined") {
+  // Agar vaqt saqlanganda faqat soat yozilgan bo'lsa, bugungi sanani olamiz
+  if (!dateOnly || !dateOnly.includes(".") || dateOnly === "undefined") {
     const now = new Date();
     dateOnly = `${String(now.getDate()).padStart(2, "0")}.${String(now.getMonth() + 1).padStart(2, "0")}.${now.getFullYear()}`;
   }
 
-  ctx.font = "normal 20px sans-serif";
+  ctx.font = "normal 24px sans-serif";
   ctx.fillText(`Sana: ${dateOnly}`, width / 2, 125);
 
   const bytes = convertCanvasToEscPosRaster(ctx, width, height);
