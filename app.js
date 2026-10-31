@@ -739,6 +739,25 @@ async function toggleBluetoothConnection() {
       optionalServices: KNOWN_SERVICES,
     });
 
+    /* ****************************************************** */
+
+    console.log("Bluetooth:", !!navigator.bluetooth);
+    console.log("Secure:", window.isSecureContext);
+
+    let toa = `Bluetooth:", ${!!navigator.bluetooth} --- Secure:", ${window.isSecureContext}`;
+
+    if (navigator.bluetooth) {
+      navigator.bluetooth
+        .getAvailability()
+        .then(console.log, showToast(toa + console.log.toString, "success"))
+        .catch(
+          console.error,
+          showToast(toa + console.error.toString, "success"),
+        );
+    }
+
+    /* ****************************************************** */
+
     // Oynadan qurilma tanlangach, qidiruv modalini yopamiz
     scanningModal.classList.add("hidden");
 
