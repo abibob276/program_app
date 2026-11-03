@@ -359,12 +359,12 @@ async function processPrintDecision(shouldPrint) {
   saveData();
 
   if (shouldPrint) {
-    if (bleState.isConnected) {
-      await printReceipt(record);
-      showToast("Inkassa saqlandi va chek chop etildi", "success");
-    } else {
-      showToast("Ma'lumot saqlandi, lekin printer ulanmagan!", "error");
-    }
+    // if (bleState.isConnected) {
+    await printReceipt(record);
+    // showToast("Inkassa saqlandi va chek chop etildi", "success");
+    // } else {
+    // showToast("Ma'lumot saqlandi, lekin printer ulanmagan!", "error");
+    // }
   } else {
     showToast("Inkassa tarixga saqlandi", "success");
   }
@@ -781,10 +781,10 @@ async function printReceipt(record) {
   // Telefon qurilmalarida (Android / RawBT uchun) Intent orqali yuborish
   const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
-  if (isMobile) {
-    printViaRawBT(record);
-    return;
-  }
+  // if (isMobile) {
+  //   printViaRawBT(record);
+  //   return;
+  // }
 
   const canvas = document.getElementById("printCanvas");
   const ctx = canvas.getContext("2d");
@@ -825,11 +825,33 @@ async function printReceipt(record) {
   ctx.fillText(`Sana: ${dateOnly}`, width / 2, 125);
 
   const bytes = convertCanvasToEscPosRaster(ctx, width, height);
+
+  if (isMobile) {
+    printViaRawBT(record, bytes);
+    return;
+  }
+
   await sendBytesInChunks(bytes);
 }
 
+async function printViaRawBT(record, bytes) {
+  // 2. Uint8Array baytlarini Base64 matniga o'giramiz
+  let binaryString = "";
+  const len = bytes.byteLength;
+  for (let i = 0; i < len; i++) {
+    binaryString += String.fromCharCode(bytes[i]);
+  }
+  const base64Bytes = btoa(binaryString);
+
+  // 3. RawBT Intent URI orqali baytlarni yuboramiz
+  const rawbtUrl = `intent:${base64Bytes}#Intent;scheme=rawbt;type=application/x-rawbt;package=ru.a402d.rawbtprinter;end;`;
+
+  // 4. RawBT ilovasini ochamiz
+  window.location.href = rawbtUrl;
+}
+
 // --- RawBT Intent orqali yuborish funksiyasi ---
-function printViaRawBT(record) {
+function printViaRawBT2(record) {
   let dateOnly = "";
   if (record.time && typeof record.time === "string") {
     dateOnly = record.time.split(" ")[0];
