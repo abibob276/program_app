@@ -844,7 +844,7 @@ async function printViaRawBT(record, bytes) {
   const base64Bytes = btoa(binaryString);
 
   // 3. RawBT Intent URI orqali baytlarni yuboramiz
-  const rawbtUrl = `intent:${base64Bytes}#Intent;scheme=rawbt;type=application/x-rawbt;package=ru.a402d.rawbtprinter;end;`;
+  const rawbtUrl = `intent:${base64Bytes}#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;`;
 
   // 4. RawBT ilovasini ochamiz
   window.location.href = rawbtUrl;
