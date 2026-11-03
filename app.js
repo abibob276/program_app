@@ -776,22 +776,16 @@ function updateBleUI(isConnected, name = "") {
   }
 }
 
-async function printReceipt(record) {
-  let text = `#${record.id}. ${record.name}\n`;
-  text += `Summa: ${(record.amount || 0).toLocaleString()} so'm\n`;
-
-  // Matnni URL xavfsiz formatiga o'tkazamiz
-  const encodedText = encodeURIComponent(text);
-
-  // RawBT uchun maxsus Intent havolasi
-  const intentUrl = `intent:${encodedText}#Intent;scheme=rawbt;package=ru.a404.rawbt;end;`;
-
-  // Havolaga o'tish orqali RawBT'ga uzatamiz
-  window.location.href = intentUrl;
-}
-
 // --- PRINTING CHEK GENERATION (CANVAS BITMAP) ---
-async function printReceipt2(record) {
+async function printReceipt(record) {
+  // Telefon qurilmalarida (Android / RawBT uchun) Intent orqali yuborish
+  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+  if (isMobile) {
+    printViaRawBT(record);
+    return;
+  }
+
   const canvas = document.getElementById("printCanvas");
   const ctx = canvas.getContext("2d");
 
@@ -832,6 +826,40 @@ async function printReceipt2(record) {
 
   const bytes = convertCanvasToEscPosRaster(ctx, width, height);
   await sendBytesInChunks(bytes);
+}
+
+// --- RawBT Intent orqali yuborish funksiyasi ---
+function printViaRawBT(record) {
+  let dateOnly = "";
+  if (record.time && typeof record.time === "string") {
+    dateOnly = record.time.split(" ")[0];
+  }
+  if (!dateOnly || !dateOnly.includes(".") || dateOnly === "undefined") {
+    const now = new Date();
+    dateOnly = `${String(now.getDate()).padStart(2, "0")}.${String(now.getMonth() + 1).padStart(2, "0")}.${now.getFullYear()}`;
+  }
+
+  const formattedAmount = (record.amount || 0)
+    .toLocaleString("en-US")
+    .replace(/,/g, " ");
+
+  // RawBT uchun ESC/POS text formatini tayyorlaymiz yoki oddiy matn ko'rinishida yuboramiz
+  // RawBT intent URL orqali base64 yoki text qabul qiladi
+  const textToPrint =
+    `\x1B\x61\x01` + // Markazga tekislash
+    `#${record.id}. ${record.name}\n` +
+    `Summa: ${formattedAmount} so'm\n` +
+    `Sana: ${dateOnly}\n\n\n`;
+
+  // Base64 ga o'tkazamiz (RawBT intent uchun eng xavfsiz usul)
+  const base64Data = btoa(unescape(encodeURIComponent(textToPrint)));
+
+  // RawBT Android Intent URI
+  // Format: intent://<base64_data>#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;
+  const rawbtUrl = `intent://${base64Data}#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;`;
+
+  // Ochishga urinamiz
+  window.location.href = rawbtUrl;
 }
 
 function convertCanvasToEscPosRaster(ctx, width, height) {
