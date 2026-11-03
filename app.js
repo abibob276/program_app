@@ -776,8 +776,22 @@ function updateBleUI(isConnected, name = "") {
   }
 }
 
-// --- PRINTING CHEK GENERATION (CANVAS BITMAP) ---
 async function printReceipt(record) {
+  let text = `#${record.id}. ${record.name}\n`;
+  text += `Summa: ${(record.amount || 0).toLocaleString()} so'm\n`;
+
+  // Matnni URL xavfsiz formatiga o'tkazamiz
+  const encodedText = encodeURIComponent(text);
+
+  // RawBT uchun maxsus Intent havolasi
+  const intentUrl = `intent:${encodedText}#Intent;scheme=rawbt;package=ru.a404.rawbt;end;`;
+
+  // Havolaga o'tish orqali RawBT'ga uzatamiz
+  window.location.href = intentUrl;
+}
+
+// --- PRINTING CHEK GENERATION (CANVAS BITMAP) ---
+async function printReceipt2(record) {
   const canvas = document.getElementById("printCanvas");
   const ctx = canvas.getContext("2d");
 
