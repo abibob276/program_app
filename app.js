@@ -586,12 +586,12 @@ function confirmReprint(id) {
   showConfirm(
     `#${item.id}. ${item.name} - chek qayta chop etilsinmi?`,
     function () {
-      if (bleState.isConnected) {
-        printReceipt(item);
-        showToast("Chek qayta chop etilmoqda", "success");
-      } else {
-        showToast("Printerga ulanmagansiz!", "error");
-      }
+      // if (bleState.isConnected) {
+      printReceipt(item);
+      //   showToast("Chek qayta chop etilmoqda", "success");
+      // } else {
+      //   showToast("Printerga ulanmagansiz!", "error");
+      // }
     },
   );
 }
