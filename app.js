@@ -789,7 +789,7 @@ async function printReceipt(record) {
   await printReceiptForAll(record);
 }
 
-// --- PRINTING CHEK GENERATION (RAWBT INTENT) ---
+// --- RAWBT INTENT ---
 async function printReceiptForAndroid(record) {
   const canvas = document.getElementById("printCanvas");
   const ctx = canvas.getContext("2d");
@@ -810,15 +810,15 @@ async function printReceiptForAndroid(record) {
   ctx.textAlign = "center";
 
   // 1. Sarlavha (ATM raqami va nomi)
-  ctx.font = "bold 26px sans-serif";
-  ctx.fillText(`#${record.id}. ${record.name}`, width / 2, 50);
+  ctx.font = "normal 28px sans-serif";
+  ctx.fillText(`#${record.id}. ${record.name}`, width / 2, 40);
 
   // 2. Summa
-  ctx.font = "bold 34px sans-serif";
+  ctx.font = "bold 32px sans-serif";
   ctx.fillText(
     `Summa: ${(record.amount || 0).toLocaleString("en-US").replace(/,/g, " ")} so'm`,
     width / 2,
-    110,
+    85,
   );
 
   // Sana va vaqtni ajratib olish
@@ -833,7 +833,7 @@ async function printReceiptForAndroid(record) {
 
   // 3. Sana
   ctx.font = "normal 24px sans-serif";
-  ctx.fillText(`Sana: ${dateOnly}`, width / 2, 160);
+  ctx.fillText(`Sana: ${dateOnly}`, width / 2, 125);
 
   // Canvas'ni base64 rasmga o'tkazish
   const dataURL = canvas.toDataURL("image/png");
@@ -842,7 +842,7 @@ async function printReceiptForAndroid(record) {
   printViaRawBTIntent(dataURL);
 }
 
-// --- PRINTING CHEK GENERATION (CANVAS RASP) ---
+// --- CANVAS RASP ---
 async function printReceiptForAll(record) {
   const canvas = document.getElementById("printCanvas");
   const ctx = canvas.getContext("2d");
@@ -859,10 +859,10 @@ async function printReceiptForAll(record) {
 
   // Matn sozlamalari (Termoprinter uchun qora rang)
   ctx.fillStyle = "#000000";
-  ctx.font = "normal 28px sans-serif";
   ctx.textAlign = "center";
 
   // Sarlavha (ATM raqami va nomi)
+  ctx.font = "normal 28px sans-serif";
   ctx.fillText(`#${record.id}. ${record.name}`, width / 2, 40);
 
   ctx.font = "bold 32px sans-serif";
