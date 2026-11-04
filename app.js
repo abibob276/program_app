@@ -814,7 +814,7 @@ async function printReceiptForAndroid(record) {
   ctx.fillText(`#${record.id}. ${record.name}`, width / 2, 40);
 
   // Bo'sh joy (gap)
-  ctx.font = "normal 12px sans-serif";
+  ctx.font = "normal 24px sans-serif";
   ctx.fillText(`- - -`, width / 2, 60);
 
   // 2. Summa
@@ -826,7 +826,7 @@ async function printReceiptForAndroid(record) {
   );
 
   // Bo'sh joy (gap)
-  ctx.font = "normal 12px sans-serif";
+  ctx.font = "normal 24px sans-serif";
   ctx.fillText(`- - -`, width / 2, 100);
 
   // Sana va vaqtni ajratib olish
@@ -844,8 +844,10 @@ async function printReceiptForAndroid(record) {
   ctx.fillText(`Sana: ${dateOnly}`, width / 2, 125);
 
   // 4. Bo'sh joy (padding)
-  ctx.font = "normal 48px sans-serif";
-  ctx.fillText(`- - -`, width / 2, 150);
+  ctx.font = "normal 24px sans-serif";
+  ctx.fillText(`-`, width / 2, 150);
+  ctx.fillText(`-`, width / 2, 170);
+  ctx.fillText(`-`, width / 2, 190);
 
   // Canvas'ni base64 rasmga o'tkazish
   const dataURL = canvas.toDataURL("image/png");
