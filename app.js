@@ -776,14 +776,13 @@ function updateBleUI(isConnected, name = "") {
   }
 }
 
-
 // --- PRINTING CHEK GENERATION (CANVAS RASP / RAWBT INTENT) ---
 async function printReceipt(record) {
   const canvas = document.getElementById("printCanvas");
   const ctx = canvas.getContext("2d");
 
   const width = 384;
-  const height = 240; // Chek uzunligi ma'lumot hajmiga moslashtirildi
+  const height = 220;
 
   canvas.width = width;
   canvas.height = height;
@@ -794,47 +793,51 @@ async function printReceipt(record) {
 
   // Matn sozlamalari (Termoprinter uchun qora rang)
   ctx.fillStyle = "#000000";
+  ctx.font = "normal 28px sans-serif";
   ctx.textAlign = "center";
 
   // Sarlavha (ATM raqami va nomi)
-  ctx.font = "bold 20px monospace";
-  ctx.fillText(`#${record.id}. ${record.name}`, width / 2, 35);
+  // ctx.font = "bold 20px monospace";
+  ctx.fillText(`#${record.id}. ${record.name}`, width / 2, 40);
 
-  // Ajratuvchi chiziq
-  ctx.font = "14px monospace";
-  ctx.fillText("------------------------------------------------", width / 2, 60);
-
-  // Summa
-  ctx.font = "bold 22px monospace";
-  const formattedAmount = (record.amount || 0).toLocaleString("en-US").replace(/,/g, " ");
-  ctx.fillText(`Summa: ${formattedAmount} so'm`, width / 2, 100);
+  ctx.font = "bold 32px sans-serif";
+  ctx.fillText(
+    `Summa: ${(record.amount || 0).toLocaleString()} so'm`,
+    width / 2,
+    85,
+  );
 
   // Sana va vaqtni ajratib olish
   let dateOnly = "";
   if (record.time && typeof record.time === "string") {
-    dateOnly = record.time;
+    // Agar record.time ichida sana bo'lsa (masalan "31.10.2026 14:30"), birinchi qismini olamiz
+    dateOnly = record.time.split(" ")[0];
   }
-  if (!dateOnly || dateOnly === "undefined") {
+  // Agar vaqt saqlanganda faqat soat yozilgan bo'lsa, bugungi sanani olamiz
+  if (!dateOnly || !dateOnly.includes(".") || dateOnly === "undefined") {
     const now = new Date();
-    dateOnly = `${String(now.getDate()).padStart(2, "0")}.${String(now.getMonth() + 1).padStart(2, "0")}.${now.getFullYear()} ${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+    dateOnly = `${String(now.getDate()).padStart(2, "0")}.${String(now.getMonth() + 1).padStart(2, "0")}.${now.getFullYear()}`;
   }
 
   // Sana
-  ctx.font = "normal 14px monospace";
-  ctx.fillText(`Sana: ${dateOnly}`, width / 2, 140);
+  ctx.font = "normal 24px sans-serif";
+  ctx.fillText(`Sana: ${dateOnly}`, width / 2, 125);
 
-  // Chiziq
-  ctx.fillText("------------------------------------------------", width / 2, 170);
+  // Telefon qurilmalarida (Android / RawBT uchun) Intent orqali yuborish
+  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
-  // Pastki eslatma
-  ctx.font = "12px monospace";
-  ctx.fillText("Inkassa xizmati", width / 2, 205);
+  if (isMobile) {
+    // Canvas'ni base64 rasmga o'tkazish
+    const dataURL = canvas.toDataURL("image/png");
 
-  // Canvas'ni base64 rasmga o'tkazish
-  const dataURL = canvas.toDataURL("image/png");
+    // RawBT intent orqali yuborish
+    printViaRawBTIntent(dataURL);
 
-  // RawBT intent orqali yuborish
-  printViaRawBTIntent(dataURL);
+    return;
+  }
+
+  const bytes = convertCanvasToEscPosRaster(ctx, width, height);
+  await sendBytesInChunks(bytes);
 }
 
 function printViaRawBTIntent(dataURL) {
@@ -854,114 +857,6 @@ function printViaRawBTIntent(dataURL) {
   } finally {
     document.body.removeChild(link);
   }
-}
-
-// --- PRINTING CHEK GENERATION (CANVAS BITMAP) ---
-async function printReceipt3(record) {
-  // Telefon qurilmalarida (Android / RawBT uchun) Intent orqali yuborish
-  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-
-  // if (isMobile) {
-  //   printViaRawBT(record);
-  //   return;
-  // }
-
-  const canvas = document.getElementById("printCanvas");
-  const ctx = canvas.getContext("2d");
-
-  const width = 384;
-  const height = 220;
-
-  canvas.width = width;
-  canvas.height = height;
-
-  ctx.fillStyle = "#FFFFFF";
-  ctx.fillRect(0, 0, width, height);
-
-  ctx.fillStyle = "#000000";
-  ctx.font = "normal 28px sans-serif";
-  ctx.textAlign = "center";
-  ctx.fillText(`#${record.id}. ${record.name}`, width / 2, 40);
-
-  ctx.font = "bold 32px sans-serif";
-  ctx.fillText(
-    `Summa: ${(record.amount || 0).toLocaleString()} so'm`,
-    width / 2,
-    85,
-  );
-
-  let dateOnly = "";
-  if (record.time && typeof record.time === "string") {
-    // Agar record.time ichida sana bo'lsa (masalan "31.10.2026 14:30"), birinchi qismini olamiz
-    dateOnly = record.time.split(" ")[0];
-  }
-  // Agar vaqt saqlanganda faqat soat yozilgan bo'lsa, bugungi sanani olamiz
-  if (!dateOnly || !dateOnly.includes(".") || dateOnly === "undefined") {
-    const now = new Date();
-    dateOnly = `${String(now.getDate()).padStart(2, "0")}.${String(now.getMonth() + 1).padStart(2, "0")}.${now.getFullYear()}`;
-  }
-
-  ctx.font = "normal 24px sans-serif";
-  ctx.fillText(`Sana: ${dateOnly}`, width / 2, 125);
-
-  const bytes = convertCanvasToEscPosRaster(ctx, width, height);
-
-  if (isMobile) {
-    printViaRawBT3(record, bytes);
-    return;
-  }
-
-  await sendBytesInChunks(bytes);
-}
-
-async function printViaRawBT3(record, bytes) {
-  // 2. Uint8Array baytlarini Base64 matniga o'giramiz
-  let binaryString = "";
-  const len = bytes.byteLength;
-  for (let i = 0; i < len; i++) {
-    binaryString += String.fromCharCode(bytes[i]);
-  }
-  const base64Bytes = btoa(binaryString);
-
-  // 3. RawBT Intent URI orqali baytlarni yuboramiz
-  const rawbtUrl = `intent:${base64Bytes}#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;`;
-
-  // 4. RawBT ilovasini ochamiz
-  window.location.href = rawbtUrl;
-}
-
-// --- RawBT Intent orqali yuborish funksiyasi ---
-function printViaRawBT2(record) {
-  let dateOnly = "";
-  if (record.time && typeof record.time === "string") {
-    dateOnly = record.time.split(" ")[0];
-  }
-  if (!dateOnly || !dateOnly.includes(".") || dateOnly === "undefined") {
-    const now = new Date();
-    dateOnly = `${String(now.getDate()).padStart(2, "0")}.${String(now.getMonth() + 1).padStart(2, "0")}.${now.getFullYear()}`;
-  }
-
-  const formattedAmount = (record.amount || 0)
-    .toLocaleString("en-US")
-    .replace(/,/g, " ");
-
-  // RawBT uchun ESC/POS text formatini tayyorlaymiz yoki oddiy matn ko'rinishida yuboramiz
-  // RawBT intent URL orqali base64 yoki text qabul qiladi
-  const textToPrint =
-    `\x1B\x61\x01` + // Markazga tekislash
-    `#${record.id}. ${record.name}\n` +
-    `Summa: ${formattedAmount} so'm\n` +
-    `Sana: ${dateOnly}\n\n\n`;
-
-  // Base64 ga o'tkazamiz (RawBT intent uchun eng xavfsiz usul)
-  const base64Data = btoa(unescape(encodeURIComponent(textToPrint)));
-
-  // RawBT Android Intent URI
-  // Format: intent://<base64_data>#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;
-  const rawbtUrl = `intent://${base64Data}#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;`;
-
-  // Ochishga urinamiz
-  window.location.href = rawbtUrl;
 }
 
 function convertCanvasToEscPosRaster(ctx, width, height) {
