@@ -778,6 +778,72 @@ function updateBleUI(isConnected, name = "") {
 
 // --- PRINTING CHEK GENERATION (CANVAS RASP / RAWBT INTENT) ---
 async function printReceipt(record) {
+  // Telefon qurilmalarida (Android / RawBT uchun) Intent orqali yuborish
+  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+  if (isMobile) {
+    await printReceiptForAndroid(record);
+    return;
+  }
+
+  await printReceiptForAll(record);
+}
+
+// --- PRINTING CHEK GENERATION (RAWBT INTENT) ---
+async function printReceiptForAndroid(record) {
+  const canvas = document.getElementById("printCanvas");
+  const ctx = canvas.getContext("2d");
+
+  const width = 384;
+  // Balandlikni biroz kattalashtiramiz va oxirida bo'sh joy (padding) qoldiramiz
+  const height = 300;
+
+  canvas.width = width;
+  canvas.height = height;
+
+  // Orqa fonni oq qilish
+  ctx.fillStyle = "#FFFFFF";
+  ctx.fillRect(0, 0, width, height);
+
+  // Matn sozlamalari (Termoprinter uchun qora rang)
+  ctx.fillStyle = "#000000";
+  ctx.textAlign = "center";
+
+  // 1. Sarlavha (ATM raqami va nomi)
+  ctx.font = "bold 26px sans-serif";
+  ctx.fillText(`#${record.id}. ${record.name}`, width / 2, 50);
+
+  // 2. Summa
+  ctx.font = "bold 34px sans-serif";
+  ctx.fillText(
+    `Summa: ${(record.amount || 0).toLocaleString("en-US").replace(/,/g, " ")} so'm`,
+    width / 2,
+    110,
+  );
+
+  // Sana va vaqtni ajratib olish
+  let dateOnly = "";
+  if (record.time && typeof record.time === "string") {
+    dateOnly = record.time.split(" ")[0];
+  }
+  if (!dateOnly || !dateOnly.includes(".") || dateOnly === "undefined") {
+    const now = new Date();
+    dateOnly = `${String(now.getDate()).padStart(2, "0")}.${String(now.getMonth() + 1).padStart(2, "0")}.${now.getFullYear()}`;
+  }
+
+  // 3. Sana
+  ctx.font = "normal 24px sans-serif";
+  ctx.fillText(`Sana: ${dateOnly}`, width / 2, 160);
+
+  // Canvas'ni base64 rasmga o'tkazish
+  const dataURL = canvas.toDataURL("image/png");
+
+  // RawBT intent orqali yuborish
+  printViaRawBTIntent(dataURL);
+}
+
+// --- PRINTING CHEK GENERATION (CANVAS RASP) ---
+async function printReceiptForAll(record) {
   const canvas = document.getElementById("printCanvas");
   const ctx = canvas.getContext("2d");
 
@@ -797,7 +863,6 @@ async function printReceipt(record) {
   ctx.textAlign = "center";
 
   // Sarlavha (ATM raqami va nomi)
-  // ctx.font = "bold 20px monospace";
   ctx.fillText(`#${record.id}. ${record.name}`, width / 2, 40);
 
   ctx.font = "bold 32px sans-serif";
@@ -822,19 +887,6 @@ async function printReceipt(record) {
   // Sana
   ctx.font = "normal 24px sans-serif";
   ctx.fillText(`Sana: ${dateOnly}`, width / 2, 125);
-
-  // Telefon qurilmalarida (Android / RawBT uchun) Intent orqali yuborish
-  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-
-  if (isMobile) {
-    // Canvas'ni base64 rasmga o'tkazish
-    const dataURL = canvas.toDataURL("image/png");
-
-    // RawBT intent orqali yuborish
-    printViaRawBTIntent(dataURL);
-
-    return;
-  }
 
   const bytes = convertCanvasToEscPosRaster(ctx, width, height);
   await sendBytesInChunks(bytes);
